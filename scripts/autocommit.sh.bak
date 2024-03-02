@@ -1,0 +1,40 @@
+#!/bin/bash
+
+# Exit immediately if a command exits with a non-zero status.
+set -e
+
+# Function to find the root directory of a git repository
+find_git_root() {
+  local DIR="${1:-$(pwd)}"
+
+  # Check if the current directory is the root directory
+  if [[ "$DIR" == "/" ]]; then
+    echo "Git root not found."
+    return 1
+  fi
+
+  # Check if the current directory contains a .git directory
+  if [[ -d "$DIR/.git" ]]; then
+    echo "$DIR"
+  else
+    # Recursively call this function with the parent directory
+    find_git_root "$(realpath "$(dirname "$DIR")")"
+  fi
+}
+
+# Function to update git repository with current Unix timestamp as commit message
+update_git() {
+  local DIR=${1:-$(find_git_root)} # Store the current directory
+  local timestamp=$(date +%s)      # Get current Unix timestamp
+
+  # Check if the current directory is a git repository
+  if git rev-parse --git-dir > /dev/null 2>&1; then
+    git add .                  # Stage all changes
+    git commit -m "$timestamp" # Commit with Unix timestamp as message
+    git push                   # Push changes to remote repository
+    echo "Git repository in $current_dir updated successfully."
+  else
+    echo "Error: $current_dir is not a git repository."
+    exit 1
+  fi
+}
